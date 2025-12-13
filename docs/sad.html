@@ -163,18 +163,49 @@ let songs=[];
 let isShuffle=false;
 let shuffleOrder=[];
 
-// Fetch Sad songs from backend
+// Fetch Sad songs from backend. If backend is not reachable (e.g., served from GitHub Pages),
+// rewrite local URLs to raw GitHub URLs so audio can still be loaded from the repository.
+const _GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/bankutech/Moodwave/main/';
+function toRawGithubUrl(possibleUrl){
+  if(!possibleUrl) return possibleUrl;
+  try{
+    // Remove any leading host (like http://localhost:3000/) or leading slashes
+    let rel = possibleUrl.replace(/^https?:\/\/[^^\/]+\//i, '');
+    rel = rel.replace(/^\/+/, '');
+    return _GITHUB_RAW_BASE + encodeURI(rel);
+  }catch(e){ return possibleUrl; }
+}
+
 fetch('http://localhost:3000/songs?mood=Sad')
 .then(res=>res.json())
 .then(data=>{
-  songs=data;
+  songs = data.map(song => {
+    if(song && song.audio_url){
+      // If the audio_url points to localhost (backend) and we're not on localhost, use raw GitHub
+      if((song.audio_url.startsWith('http://localhost') || song.audio_url.startsWith('https://localhost')) && location.hostname !== 'localhost'){
+        song.audio_url = toRawGithubUrl(song.audio_url);
+      }
+      // If it's a relative path (starts with something like "public/" or "backend/"), convert it too
+      if(!song.audio_url.startsWith('http') && location.hostname !== 'localhost'){
+        song.audio_url = _GITHUB_RAW_BASE + encodeURI(song.audio_url.replace(/^\/+/, ''));
+      }
+    }
+    return song;
+  });
+
   if(songs.length>0) {
     initializeShuffle();
     loadSong(0);
     playBtn.textContent='▶ PLAY';
   }
 })
-.catch(err=>console.error("Error fetching songs:", err));
+.catch(err=>{
+  console.error("Error fetching songs:", err);
+  // fallback to a small local sample if fetching fails
+  songs = [{ title: 'Sample', audio_url: 'music/sample.mp3' }];
+  initializeShuffle();
+  loadSong(0);
+});
 
 function initializeShuffle(){shuffleOrder=Array.from({length:songs.length},(_,i)=>i);}
 function shuffleArray(array){const shuffled=[...array];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}return shuffled;}
