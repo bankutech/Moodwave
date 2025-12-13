@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>DJ MoodWave Happy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Segoe UI",sans-serif; }
+body { height:100vh; overflow:hidden; display:flex; justify-content:center; align-items:center; color:#fff;
+background: radial-gradient(circle at center, rgba(182, 163, 115, 0.35) 0%, rgba(251,127,0,0.0) 40%), radial-gradient(circle at top, #0ea5e9 0%, transparent 35%), radial-gradient(circle at bottom, #020617, #000814);}
+body::before, body::after { content:""; position:absolute; width:700px; height:700px; border-radius:50%; background: radial-gradient(circle, rgba(14,165,233,0.35), transparent 60%); filter: blur(120px); animation: move 10s infinite alternate; }
+body::after { animation-delay: 3s; }
+@keyframes move { from { transform: translate(-150px,-150px);} to { transform: translate(150px,150px);} }
+.player { width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:2; }
+h1 { font-size:2.5rem; letter-spacing:4px; margin-bottom:35px; text-shadow: 0 0 20px #facc15, 0 0 40px #f97316; color:#fff; }
+.visualizer { display:flex; align-items:flex-end; gap:10px; height:240px; }
+.bar { width:12px; height:30px; border-radius:20px; background: linear-gradient(180deg, #ffd60a, #fbbf24, #f97316); box-shadow: 0 0 15px #fbbf24, 0 0 35px #ca9f80; transition: height 0.07s ease; }
+button { margin-top:45px; padding:16px 50px; font-size:18px; letter-spacing:2px; border:none; border-radius:50px; background: linear-gradient(90deg, #fbbf24, #f97316); color:#fff; cursor:pointer; box-shadow:0 0 25px #fbbf24,0 0 50px #f97316; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+button:hover { transform: scale(1.1); }
+.controls { display:flex; align-items:center; gap:20px; margin-top:30px; }
+.control-btn { padding:12px 20px; font-size:16px; margin-top:0; }
+.shuffle-btn { padding:12px 20px; font-size:16px; margin-top:0; }
+.shuffle-btn.active { background: linear-gradient(90deg, #f97316, #fbbf24); box-shadow:0 0 30px #fbbf24,0 0 60px #f97316; }
+.back-btn { position: fixed; top:25px; left:25px; padding:10px 22px; font-size:16px; border:none; border-radius:30px; background: linear-gradient(90deg, #fbbf24, #f97316); color:#fff; cursor:pointer; box-shadow:0 0 15px #fbbf24,0 0 35px #f97316; z-index:999; }
+.back-btn:hover { transform: scale(1.1); box-shadow:0 0 25px #cca952,0 0 60px #cc8c5e; }
+audio{display:none;}
+</style>
+</head>
+<body>
+
+<button class="back-btn" onclick="window.location.href='mood.html'">⟵ Back</button>
+
+<div class="player">
+<h1>Happy MoodWave</h1>
+<div class="visualizer" id="visualizer"></div>
+<div class="controls">
+  <button class="control-btn" id="prevBtn">⏮ PREV</button>
+  <button id="playBtn">▶ PLAY</button>
+  <button class="control-btn" id="nextBtn">NEXT ⏭</button>
+</div>
+<button class="shuffle-btn" id="shuffleBtn">🔀 SHUFFLE</button>
+<audio id="audio" controls></audio>
+</div>
+
+<script>
+const audio=document.getElementById("audio");
+const playBtn=document.getElementById("playBtn");
+const visualizer=document.getElementById("visualizer");
+const barsCount=52;
+const bars=[];
+for(let i=0;i<barsCount;i++){const bar=document.createElement("div"); bar.className="bar"; visualizer.appendChild(bar); bars.push(bar);}
+let audioContext, analyser, dataArray;
+let currentSongIndex=0;
+let songs=[];
+let isShuffle=false;
+let shuffleOrder=[];
+
+// Fetch songs from backend
+fetch('http://localhost:3000/songs?mood=Happy')
+.then(res=>res.json())
+.then(data=>{
+  songs=data;
+  if(songs.length>0) {
+    initializeShuffle();
+    loadSong(0);
+    playBtn.textContent='▶ PLAY';
+  }
+})
+.catch(err=>console.error("Error fetching songs:", err));
+
+function initializeShuffle(){shuffleOrder=Array.from({length:songs.length},(_,i)=>i);}
+function shuffleArray(array){const shuffled=[...array];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}return shuffled;}
+function loadSong(index){if(index<0||index>=songs.length)return;currentSongIndex=index;audio.src=songs[currentSongIndex].audio_url;audio.load();const wasPlaying=!audio.paused;if(wasPlaying){audio.play().catch(err=>console.error('Error playing song:',err));}}
+function getNextIndex(){if(isShuffle){const currentPos=shuffleOrder.indexOf(currentSongIndex);const nextPos=(currentPos+1)%shuffleOrder.length;return shuffleOrder[nextPos];}else{return(currentSongIndex+1)%songs.length;}}
+function getPrevIndex(){if(isShuffle){const currentPos=shuffleOrder.indexOf(currentSongIndex);const prevPos=(currentPos-1+shuffleOrder.length)%shuffleOrder.length;return shuffleOrder[prevPos];}else{return(currentSongIndex-1+songs.length)%songs.length;}}
+
+audio.addEventListener('error', (e)=>{
+  console.error('Audio error:', e);
+  playBtn.textContent='❌ Error loading audio';
+});
+
+audio.addEventListener('canplay', ()=>{
+  console.log('Audio ready to play');
+});
+
+playBtn.addEventListener("click", ()=>{
+  if(songs.length===0){
+    alert('No songs available. Please wait for songs to load.');
+    return;
+  }
+  
+  if(!audioContext){
+    audioContext=new AudioContext();
+    const source=audioContext.createMediaElementSource(audio);
+    analyser=audioContext.createAnalyser();
+    analyser.fftSize=128;
+    dataArray=new Uint8Array(analyser.frequencyBinCount);
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
+  }
+  
+  if(audio.paused){
+    audio.play().then(()=>{
+      playBtn.textContent='⏸ PAUSE';
+      animate();
+    }).catch(err=>{
+      console.error('Play error:', err);
+      alert('Error playing audio. Please check the console for details.');
+    });
+  }else{
+    audio.pause();
+    playBtn.textContent='▶ PLAY';
+  }
+});
+
+function animate(){
+  requestAnimationFrame(animate);
+  if(!analyser) return;
+  analyser.getByteFrequencyData(dataArray);
+  bars.forEach((bar,i)=>{
+    const value=dataArray[i]||0;
+    bar.style.height=Math.max(25,value*1.5)+'px';
+  });
+}
+
+document.getElementById("nextBtn").addEventListener("click",()=>{if(songs.length===0)return;const nextIndex=getNextIndex();loadSong(nextIndex);if(!audio.paused){audio.play().catch(err=>console.error('Error playing next song:',err));}});
+document.getElementById("prevBtn").addEventListener("click",()=>{if(songs.length===0)return;const prevIndex=getPrevIndex();loadSong(prevIndex);if(!audio.paused){audio.play().catch(err=>console.error('Error playing previous song:',err));}});
+document.getElementById("shuffleBtn").addEventListener("click",()=>{isShuffle=!isShuffle;const shuffleBtn=document.getElementById("shuffleBtn");if(isShuffle){shuffleOrder=shuffleArray(Array.from({length:songs.length},(_,i)=>i));const currentPos=shuffleOrder.indexOf(currentSongIndex);if(currentPos>0){[shuffleOrder[0],shuffleOrder[currentPos]]=[shuffleOrder[currentPos],shuffleOrder[0]];}shuffleBtn.classList.add("active");shuffleBtn.textContent="🔀 SHUFFLE ON";}else{shuffleBtn.classList.remove("active");shuffleBtn.textContent="🔀 SHUFFLE";}});
+audio.addEventListener("ended",()=>{if(songs.length===0)return;const nextIndex=getNextIndex();loadSong(nextIndex);audio.play().catch(err=>console.error('Error playing next song:',err));});
+</script>
+
+</body>
+</html>
