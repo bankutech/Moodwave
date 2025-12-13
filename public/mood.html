@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Select Your Mood</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: radial-gradient(circle at top, #0a0f1a, #030712);
+      color: white;
+      font-family: "Inter", sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      color: #d946ef;
+    }
+
+    .back {
+      color: #aaa;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 50px 0 10px;
+      font-size: clamp(32px, 6vw, 48px);
+    }
+
+    p {
+      text-align: center;
+      opacity: 0.7;
+      margin-bottom: 50px;
+    }
+
+    .mood-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 30px;
+      padding: 0 50px 80px;
+    }
+
+    .mood-card {
+      background: linear-gradient(145deg, #0d1320, #050914);
+      border-radius: 20px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: 0.4s ease;
+    }
+
+    .mood-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(217,70,239,0.35), transparent 60%);
+      opacity: 0;
+      transition: 0.4s;
+    }
+
+    .mood-card:hover::before {
+      opacity: 1;
+    }
+
+    .mood-card:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 0 40px rgba(217,70,239,0.6);
+    }
+
+    .emoji {
+      font-size: 42px;
+      margin-bottom: 15px;
+    }
+
+    .mood-name {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .desc {
+      font-size: 14px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="logo">🎵 MoodWave</div>
+    <a href="index.html" class="back">← Back</a>
+  </header>
+
+  <h1>Choose Your Mood</h1>
+  <p>Music that matches how you feel right now</p>
+
+  <section class="mood-grid">
+    <div class="mood-card" data-link="happy.html">
+      <div class="emoji">😊</div>
+      <div class="mood-name">Happy</div>
+      <div class="desc">Feel-good & upbeat vibes</div>
+    </div>
+
+    <div class="mood-card" data-link="chill.html">
+      <div class="emoji">😌</div>
+      <div class="mood-name">Chill</div>
+      <div class="desc">Relax & slow down</div>
+    </div>
+
+    <div class="mood-card" data-link="sad.html">
+      <div class="emoji">💔</div>
+      <div class="mood-name">Sad</div>
+      <div class="desc">Emotional & soft tracks</div>
+    </div>
+
+    <div class="mood-card" data-link="energetic.html">
+      <div class="emoji">🔥</div>
+      <div class="mood-name">Energetic</div>
+      <div class="desc">Boost your energy</div>
+    </div>
+
+    <div class="mood-card" data-link="night.html">
+      <div class="emoji">🌙</div>
+      <div class="mood-name">Night</div>
+      <div class="desc">Late-night calm beats</div>
+    </div>
+
+    <div class="mood-card" data-link="focus.html">
+      <div class="emoji">🎧</div>
+      <div class="mood-name">Focus</div>
+      <div class="desc">Deep concentration music</div>
+    </div>
+  </section>
+
+  <script>
+    document.querySelectorAll(".mood-card").forEach(card => {
+      card.addEventListener("click", () => {
+        window.location.href = card.dataset.link;
+      });
+    });
+  </script>
+
+</body>
+</html>

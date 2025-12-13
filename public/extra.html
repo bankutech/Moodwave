@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DJ MoodWave Dynamic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:"Segoe UI",sans-serif; }
+body {
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:#fff;
+  background: radial-gradient(circle at top, #0ea5e9 0%, transparent 35%), radial-gradient(circle at bottom, #020617, #000814);
+}
+body::before, body::after {
+  content:"";
+  position:absolute;
+  width:700px;
+  height:700px;
+  border-radius:50%;
+  background: radial-gradient(circle, rgba(14,165,233,0.35), transparent 60%);
+  filter: blur(120px);
+  animation: move 10s infinite alternate;
+}
+body::after { animation-delay: 3s; }
+@keyframes move { from { transform: translate(-150px,-150px);} to { transform: translate(150px,150px);} }
+
+.player {
+  width:100%;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  z-index:2;
+}
+h1 { font-size:2.5rem; letter-spacing:4px; margin-bottom:25px; }
+.visualizer {
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  height:240px;
+}
+.bar { width:12px; height:30px; border-radius:20px; transition: height 0.07s ease; }
+button { margin-top:25px; padding:16px 50px; font-size:18px; letter-spacing:2px; border:none; border-radius:50px; cursor:pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+button:hover { transform: scale(1.05); }
+.back-btn {
+  position: fixed; top:25px; left:25px;
+  padding:10px 22px; font-size:16px; border:none; border-radius:30px; cursor:pointer;
+  z-index:999;
+}
+.back-btn:hover { transform: scale(1.1); }
+
+.mood-btns {
+  display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;
+}
+.mood-btns button { border-radius:30px; padding:10px 18px; font-size:14px; }
+
+audio{display:none;}
+</style>
+</head>
+<body>
+
+<!-- Back button -->
+<button class="back-btn" onclick="window.location.href='mood.html'">⟵ Back</button>
+
+<div class="player">
+  <div class="mood-btns">
+    <button onclick="setMood('happy')">😊 Happy</button>
+    <button onclick="setMood('sad')">💔 Sad</button>
+    <button onclick="setMood('energetic')">🔥 Energetic</button>
+    <button onclick="setMood('chill')">😌 Chill</button>
+    <button onclick="setMood('night')">🌙 Night</button>
+    <button onclick="setMood('focus')">🎧 Focus</button>
+  </div>
+
+  <h1 id="title">DJ MoodWave</h1>
+  <div class="visualizer" id="visualizer"></div>
+  <button id="playBtn">▶ PLAY</button>
+  <audio id="audio" src="music.mp3"></audio>
+</div>
+
+<script>
+const audio=document.getElementById("audio");
+const playBtn=document.getElementById("playBtn");
+const visualizer=document.getElementById("visualizer");
+const title=document.getElementById("title");
+const barsCount=52;
+const bars=[];
+
+// create bars
+for(let i=0;i<barsCount;i++){
+  const bar=document.createElement("div");
+  bar.className="bar";
+  visualizer.appendChild(bar);
+  bars.push(bar);
+}
+
+// moods configuration
+const moods={
+  happy: {
+    title:"😊 Happy Vibes",
+    overlay:"rgba(251,191,36,0.35)",
+    bars:["#ffd60a","#fbbf24","#f97316"],
+    glow:"#fbbf24,#f97316",
+    button:"linear-gradient(90deg, #fbbf24,#f97316)"
+  },
+  sad: {
+    title:"💔 Sad Vibes",
+    overlay:"rgba(139,92,246,0.35)",
+    bars:["#8b5cf6","#7c3aed","#4f46e5"],
+    glow:"#8b5cf6,#4f46e5",
+    button:"linear-gradient(90deg,#8b5cf6,#7c3aed)"
+  },
+  energetic: {
+    title:"🔥 Energetic Vibes",
+    overlay:"rgba(252,71,71,0.35)",
+    bars:["#fc4747","#fb9f1c","#facc15"],
+    glow:"#fc4747,#fb9f1c",
+    button:"linear-gradient(90deg,#fc4747,#fb9f1c)"
+  },
+  chill: {
+    title:"😌 Chill Vibes",
+    overlay:"rgba(14,165,233,0.35)",
+    bars:["#38bdf8","#0ea5e9","#0284c7"],
+    glow:"#3b82f6,#06b6d4",
+    button:"linear-gradient(90deg,#3b82f6,#06b6d4)"
+  },
+  night: {
+    title:"🌙 Night Vibes",
+    overlay:"rgba(79,70,229,0.25)",
+    bars:["#7c3aed","#4f46e5","#3730a3"],
+    glow:"#7c3aed,#4f46e5",
+    button:"linear-gradient(90deg,#7c3aed,#4f46e5)"
+  },
+  focus: {
+    title:"🎧 Focus Vibes",
+    overlay:"rgba(20,184,166,0.35)",
+    bars:["#2dd4bf","#14b8a6","#06b6d4"],
+    glow:"#14b8a6,#06b6d4",
+    button:"linear-gradient(90deg,#14b8a6,#06b6d4)"
+  }
+};
+
+// overlay div for middle color
+let overlayDiv=document.createElement("div");
+overlayDiv.style.position="absolute";
+overlayDiv.style.top="0";
+overlayDiv.style.left="0";
+overlayDiv.style.width="100%";
+overlayDiv.style.height="100%";
+overlayDiv.style.zIndex="1";
+overlayDiv.style.pointerEvents="none";
+overlayDiv.style.background="radial-gradient(circle at center, rgba(0,0,0,0) 0%,rgba(0,0,0,0) 40%)";
+document.body.appendChild(overlayDiv);
+
+function setMood(mood){
+  const m=moods[mood];
+  title.textContent=m.title;
+  overlayDiv.style.background=`radial-gradient(circle at center, ${m.overlay} 0%, ${m.overlay.replace(/rgba.*?,0\)/,'rgba(0,0,0,0)')} 40%)`;
+  bars.forEach(bar=>{
+    bar.style.background=`linear-gradient(180deg, ${m.bars.join(",")})`;
+    bar.style.boxShadow=`0 0 15px ${m.bars[1]},0 0 35px ${m.bars[2]}`;
+  });
+  playBtn.style.background=m.button;
+  playBtn.style.boxShadow=`0 0 25px ${m.bars[1]},0 0 50px ${m.bars[2]}`;
+  document.querySelector(".back-btn").style.background=m.button;
+  document.querySelector(".back-btn").style.boxShadow=`0 0 15px ${m.bars[1]},0 0 35px ${m.bars[2]}`;
+}
+
+// Audio visualization
+let audioContext,analyser,dataArray;
+playBtn.addEventListener("click",()=>{
+  if(!audioContext){
+    audioContext=new AudioContext();
+    const source=audioContext.createMediaElementSource(audio);
+    analyser=audioContext.createAnalyser();
+    analyser.fftSize=128;
+    dataArray=new Uint8Array(analyser.frequencyBinCount);
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
+  }
+  audio.play();
+  animate();
+});
+
+function animate(){
+  requestAnimationFrame(animate);
+  analyser.getByteFrequencyData(dataArray);
+  bars.forEach((bar,i)=>{
+    const value=dataArray[i]||0;
+    bar.style.height=Math.max(25,value*1.5)+"px";
+  });
+}
+
+// default mood
+setMood("happy");
+</script>
+
+</body>
+</html>
