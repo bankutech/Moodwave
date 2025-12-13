@@ -47,10 +47,14 @@ app.get('/songs', (req, res) => {
       console.error(err);
       return res.status(500).json(err);
     }
-    // Convert relative URLs to full URLs
+    // Convert relative audio paths to full URLs served from /music
+    // Use the request host/protocol so URLs are accurate when accessed locally
+    const baseHost = `${req.protocol}://${req.get('host')}`;
     const songs = results.map(song => {
       if (song.audio_url && !song.audio_url.startsWith('http')) {
-        song.audio_url = `http://localhost:3000/${song.audio_url}`;
+        // If the stored value already contains path segments, take the filename
+        const filename = song.audio_url.split(/[\\/]/).pop();
+        song.audio_url = `${baseHost}/music/${encodeURIComponent(filename)}`;
       }
       return song;
     });
@@ -59,6 +63,7 @@ app.get('/songs', (req, res) => {
 });
 
 // 🚀 Start server
-app.listen(3000, () => {
-  console.log('🚀 Server running at http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://${process.env.HOST || 'localhost'}:${PORT}`);
 });

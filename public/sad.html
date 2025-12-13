@@ -176,7 +176,7 @@ function toRawGithubUrl(possibleUrl){
   }catch(e){ return possibleUrl; }
 }
 
-fetch('http://localhost:3000/songs?mood=Sad')
+.fetch('/songs?mood=Sad')
 .then(res=>res.json())
 .then(data=>{
   songs = data.map(song => {
