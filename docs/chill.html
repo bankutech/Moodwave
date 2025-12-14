@@ -51,6 +51,7 @@ const bars = [];
 for (let i = 0; i < barsCount; i++) {
     const bar = document.createElement("div");
     bar.className = "bar";
+    bar.style.height = "30px"; // Initial height
     visualizer.appendChild(bar);
     bars.push(bar);
 }
@@ -61,18 +62,32 @@ let songs = [];
 let isShuffle = false;
 let shuffleOrder = [];
 
-// Fetch Chill songs from backend
-fetch('http://localhost:3000/songs?mood=Chill')
-    .then(res => res.json())
-    .then(data => {
-        songs = data;
-        if (songs.length > 0) {
-            initializeShuffle();
-            loadSong(0);
-            playBtn.textContent = '▶ PLAY';
-        }
-    })
-    .catch(err => console.error("Error fetching songs:", err));
+// Fetch Chill songs - try backend API first, fallback to JSON file for GitHub Pages
+function loadSongs(){
+  fetch('/songs?mood=Chill')
+  .then(res=>res.json())
+  .then(data=>{songs=data;processSongs();})
+  .catch(err=>{console.log("Backend not available, using JSON file");loadFromJSON();});
+}
+function loadFromJSON(){
+  fetch('songs.json')
+  .then(res=>res.json())
+  .then(allSongs=>{
+    songs = allSongs.filter(song => song.mood === 'Chill');
+    processSongs();
+  })
+  .catch(err=>{console.error("Error loading songs.json:", err);playBtn.textContent='❌ Error loading songs';});
+}
+function processSongs(){
+  if(songs.length>0) {
+    initializeShuffle();
+    loadSong(0);
+    playBtn.textContent='▶ PLAY';
+  } else {
+    playBtn.textContent='❌ No songs found';
+  }
+}
+loadSongs();
 
 // Initialize shuffle order
 function initializeShuffle() {
@@ -152,7 +167,7 @@ playBtn.addEventListener("click", () => {
     if (audio.paused) {
         audio.play().then(() => {
             playBtn.textContent = '⏸ PAUSE';
-            animate();
+            // Animation is already running, analyser will be used when ready
         }).catch(err => {
             console.error('Play error:', err);
             alert('Error playing audio. Please check the console for details.');
@@ -163,15 +178,29 @@ playBtn.addEventListener("click", () => {
     }
 });
 
+// Animate bars
+let animationId = null;
 function animate() {
-    requestAnimationFrame(animate);
-    if (!analyser) return;
+    if (!analyser || !dataArray) {
+        // If analyser not ready, show default animation
+        bars.forEach((bar, i) => {
+            const baseHeight = 30;
+            const wave = Math.sin(Date.now() / 200 + i * 0.1) * 10;
+            bar.style.height = (baseHeight + wave) + 'px';
+        });
+        animationId = requestAnimationFrame(animate);
+        return;
+    }
     analyser.getByteFrequencyData(dataArray);
     bars.forEach((bar, i) => {
         const value = dataArray[i] || 0;
         bar.style.height = Math.max(25, value * 1.5) + 'px';
     });
+    animationId = requestAnimationFrame(animate);
 }
+
+// Start animation loop immediately so bars are always visible
+animate();
 
 // Next button
 document.getElementById("nextBtn").addEventListener("click", () => {
