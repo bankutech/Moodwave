@@ -4,7 +4,7 @@ A neon-themed music player that matches your mood with curated playlists. Built 
 
 ## 🌐 Live Demo
 
-**GitHub Pages (Static - No Backend Required):**
+**GitHub Pages (Static - Backend Required):**
 👉 **https://bankutech.github.io/Moodwave/**
 
 Music will play directly from the repository when accessed via GitHub Pages.
